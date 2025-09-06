@@ -180,6 +180,81 @@ export interface SliceData {
     getContour?: (state: any) => Promise<number[]>;
 }
 
+export enum ROIDrawingMode {
+    RECTANGLE = 'roi_rectangle',
+    POLYGON = 'roi_polygon', 
+    CIRCLE = 'roi_circle',
+    FREEHAND = 'roi_freehand',
+}
+
+export enum ROIVisualizationMode {
+    TEMPLATE_PREVIEW = 'template_preview',
+    FEATURE_POINTS = 'feature_points',
+    MATCHING_RESULTS = 'matching_results',
+}
+
+export interface ROITemplate {
+    id: string;
+    name: string;
+    type: ROIDrawingMode;
+    points: number[];
+    featurePoints?: number[];
+    confidence?: number;
+    color?: string;
+    metadata?: Record<string, any>;
+}
+
+export interface ROIDrawData {
+    enabled: boolean;
+    mode?: ROIDrawingMode;
+    template?: ROITemplate;
+    visualizationMode?: ROIVisualizationMode;
+    showFeaturePoints?: boolean;
+    showMatchingResults?: boolean;
+    onROICreated?: (roi: ROITemplate) => void;
+    onROIUpdated?: (roi: ROITemplate) => void;
+    onROIDeleted?: (roiId: string) => void;
+}
+
+export interface ROIEditData {
+    enabled: boolean;
+    roiId?: string;
+    allowResize?: boolean;
+    allowMove?: boolean;
+    allowDelete?: boolean;
+}
+
+export interface ROIMatchingResult {
+    templateId: string;
+    matchPoints: number[];
+    confidence: number;
+    boundingBox: number[];
+    featureMatches?: Array<{
+        templatePoint: number[];
+        imagePoint: number[];
+        confidence: number;
+    }>;
+}
+
+export interface ROIVisualizationData {
+    enabled: boolean;
+    templates: ROITemplate[];
+    matchingResults?: ROIMatchingResult[];
+    highlightedROI?: string;
+    visualizationMode?: ROIVisualizationMode;
+}
+
+export interface ROIHistoryItem {
+    action: 'create' | 'update' | 'delete' | 'visualize';
+    timestamp: number;
+    data: {
+        template?: ROITemplate;
+        previousTemplate?: ROITemplate;
+        templateId?: string;
+        visualizationData?: ROIVisualizationData;
+    };
+}
+
 export enum FrameZoom {
     MIN = 0.1,
     MAX = 10,
@@ -218,6 +293,14 @@ export enum UpdateReasons {
     CONFIG_UPDATED = 'config_updated',
     DATA_FAILED = 'data_failed',
     DESTROY = 'destroy',
+    
+    ROI_DRAW = 'roi_draw',
+    ROI_EDIT = 'roi_edit',
+    ROI_VISUALIZE = 'roi_visualize',
+    ROI_TEMPLATE_CREATED = 'roi_template_created',
+    ROI_TEMPLATE_UPDATED = 'roi_template_updated',
+    ROI_TEMPLATE_DELETED = 'roi_template_deleted',
+    ROI_MATCHING_RESULTS_UPDATED = 'roi_matching_results_updated',
 }
 
 export enum Mode {
@@ -235,6 +318,9 @@ export enum Mode {
     SELECT_REGION = 'select_region',
     DRAG_CANVAS = 'drag_canvas',
     ZOOM_CANVAS = 'zoom_canvas',
+    ROI_DRAW = 'roi_draw',
+    ROI_EDIT = 'roi_edit',
+    ROI_VISUALIZE = 'roi_visualize',
 }
 
 export interface CanvasModel {
@@ -256,6 +342,10 @@ export interface CanvasModel {
     readonly groupData: GroupData;
     readonly joinData: JoinData;
     readonly sliceData: SliceData;
+    readonly roiDrawData: ROIDrawData;
+    readonly roiEditData: ROIEditData;
+    readonly roiVisualizationData: ROIVisualizationData;
+    readonly roiHistory: ROIHistoryItem[];
     readonly configuration: Configuration;
     readonly selected: any;
     geometry: Geometry;
@@ -283,6 +373,13 @@ export interface CanvasModel {
     merge(mergeData: MergeData): void;
     select(objectState: any): void;
     interact(interactionData: InteractionData): void;
+    
+    drawROI(roiDrawData: ROIDrawData): void;
+    editROI(roiEditData: ROIEditData): void;
+    visualizeROI(roiVisualizationData: ROIVisualizationData): void;
+    undoROI(): boolean;
+    redoROI(): boolean;
+    clearROIHistory(): void;
 
     fitCanvas(width: number, height: number): void;
     bitmap(enabled: boolean): void;
@@ -321,6 +418,18 @@ const defaultData = {
     sliceData: {
         enabled: false,
     },
+    roiDrawData: {
+        enabled: false,
+    },
+    roiEditData: {
+        enabled: false,
+    },
+    roiVisualizationData: {
+        enabled: false,
+        templates: [],
+    },
+    roiHistory: [],
+    roiHistoryIndex: -1,
 };
 
 function hasShapeIsBeingDrawn(): boolean {
@@ -376,6 +485,11 @@ export class CanvasModelImpl extends MasterImpl implements CanvasModel {
         joinData: JoinData;
         sliceData: SliceData;
         splitData: SplitData;
+        roiDrawData: ROIDrawData;
+        roiEditData: ROIEditData;
+        roiVisualizationData: ROIVisualizationData;
+        roiHistory: ROIHistoryItem[];
+        roiHistoryIndex: number;
         selected: any;
         mode: Mode;
         exception: Error | null;
@@ -940,6 +1054,184 @@ export class CanvasModelImpl extends MasterImpl implements CanvasModel {
         this.data.selected = null;
     }
 
+    public drawROI(roiDrawData: ROIDrawData): void {
+        if (![Mode.IDLE, Mode.ROI_DRAW].includes(this.data.mode)) {
+            throw Error(`Canvas is busy. Action: ${this.data.mode}`);
+        }
+
+        if (this.data.roiDrawData.enabled && roiDrawData.enabled) {
+            throw Error('ROI drawing is already enabled');
+        }
+
+        if (this.data.roiDrawData.enabled !== roiDrawData.enabled) {
+            this.data.mode = roiDrawData.enabled ? Mode.ROI_DRAW : Mode.IDLE;
+        }
+
+        this.data.roiDrawData = { ...roiDrawData };
+        this.notify(UpdateReasons.ROI_DRAW);
+    }
+
+    public editROI(roiEditData: ROIEditData): void {
+        if (![Mode.IDLE, Mode.ROI_EDIT].includes(this.data.mode)) {
+            throw Error(`Canvas is busy. Action: ${this.data.mode}`);
+        }
+
+        if (this.data.roiEditData.enabled && roiEditData.enabled) {
+            throw Error('ROI editing is already enabled');
+        }
+
+        if (this.data.roiEditData.enabled !== roiEditData.enabled) {
+            this.data.mode = roiEditData.enabled ? Mode.ROI_EDIT : Mode.IDLE;
+        }
+
+        this.data.roiEditData = { ...roiEditData };
+        this.notify(UpdateReasons.ROI_EDIT);
+    }
+
+    public visualizeROI(roiVisualizationData: ROIVisualizationData): void {
+        if (![Mode.IDLE, Mode.ROI_VISUALIZE].includes(this.data.mode)) {
+            throw Error(`Canvas is busy. Action: ${this.data.mode}`);
+        }
+
+        if (this.data.roiVisualizationData.enabled !== roiVisualizationData.enabled) {
+            this.data.mode = roiVisualizationData.enabled ? Mode.ROI_VISUALIZE : Mode.IDLE;
+        }
+
+        this.data.roiVisualizationData = { ...roiVisualizationData };
+        this.notify(UpdateReasons.ROI_VISUALIZE);
+    }
+
+    private addROIHistoryItem(action: ROIHistoryItem['action'], data: ROIHistoryItem['data']): void {
+        // Remove any history items after the current index (when undoing and then doing something new)
+        this.data.roiHistory = this.data.roiHistory.slice(0, this.data.roiHistoryIndex + 1);
+        
+        // Add the new history item
+        const historyItem: ROIHistoryItem = {
+            action,
+            timestamp: Date.now(),
+            data,
+        };
+        
+        this.data.roiHistory.push(historyItem);
+        this.data.roiHistoryIndex = this.data.roiHistory.length - 1;
+        
+        // Limit history size to prevent memory issues
+        const MAX_HISTORY_SIZE = 50;
+        if (this.data.roiHistory.length > MAX_HISTORY_SIZE) {
+            this.data.roiHistory.shift();
+            this.data.roiHistoryIndex--;
+        }
+    }
+
+    public undoROI(): boolean {
+        if (this.data.roiHistoryIndex < 0) {
+            return false; // No history to undo
+        }
+
+        const historyItem = this.data.roiHistory[this.data.roiHistoryIndex];
+        this.data.roiHistoryIndex--;
+
+        // Apply the undo operation
+        switch (historyItem.action) {
+            case 'create':
+                // Undo create: remove the template
+                if (historyItem.data.template) {
+                    this.data.roiVisualizationData.templates = 
+                        this.data.roiVisualizationData.templates.filter(
+                            template => template.id !== historyItem.data.template!.id
+                        );
+                }
+                break;
+
+            case 'update':
+                // Undo update: restore the previous template
+                if (historyItem.data.previousTemplate) {
+                    const templateIndex = this.data.roiVisualizationData.templates.findIndex(
+                        template => template.id === historyItem.data.previousTemplate!.id
+                    );
+                    if (templateIndex !== -1) {
+                        this.data.roiVisualizationData.templates[templateIndex] = 
+                            { ...historyItem.data.previousTemplate };
+                    }
+                }
+                break;
+
+            case 'delete':
+                // Undo delete: restore the template
+                if (historyItem.data.template) {
+                    this.data.roiVisualizationData.templates.push({ ...historyItem.data.template });
+                }
+                break;
+
+            case 'visualize':
+                // Undo visualization change: restore the previous state
+                if (historyItem.data.visualizationData) {
+                    this.data.roiVisualizationData = { ...historyItem.data.visualizationData };
+                }
+                break;
+        }
+
+        this.notify(UpdateReasons.ROI_VISUALIZE);
+        return true;
+    }
+
+    public redoROI(): boolean {
+        if (this.data.roiHistoryIndex >= this.data.roiHistory.length - 1) {
+            return false; // No history to redo
+        }
+
+        this.data.roiHistoryIndex++;
+        const historyItem = this.data.roiHistory[this.data.roiHistoryIndex];
+
+        // Apply the redo operation
+        switch (historyItem.action) {
+            case 'create':
+                // Redo create: add the template back
+                if (historyItem.data.template) {
+                    this.data.roiVisualizationData.templates.push({ ...historyItem.data.template });
+                }
+                break;
+
+            case 'update':
+                // Redo update: apply the updated template
+                if (historyItem.data.template) {
+                    const templateIndex = this.data.roiVisualizationData.templates.findIndex(
+                        template => template.id === historyItem.data.template!.id
+                    );
+                    if (templateIndex !== -1) {
+                        this.data.roiVisualizationData.templates[templateIndex] = 
+                            { ...historyItem.data.template };
+                    }
+                }
+                break;
+
+            case 'delete':
+                // Redo delete: remove the template
+                if (historyItem.data.templateId) {
+                    this.data.roiVisualizationData.templates = 
+                        this.data.roiVisualizationData.templates.filter(
+                            template => template.id !== historyItem.data.templateId
+                        );
+                }
+                break;
+
+            case 'visualize':
+                // Redo visualization change: apply the new state
+                if (historyItem.data.visualizationData) {
+                    this.data.roiVisualizationData = { ...historyItem.data.visualizationData };
+                }
+                break;
+        }
+
+        this.notify(UpdateReasons.ROI_VISUALIZE);
+        return true;
+    }
+
+    public clearROIHistory(): void {
+        this.data.roiHistory = [];
+        this.data.roiHistoryIndex = -1;
+    }
+
     public configure(configuration: Configuration): void {
         if (typeof configuration.displayAllText === 'boolean') {
             this.data.configuration.displayAllText = configuration.displayAllText;
@@ -1144,6 +1436,22 @@ export class CanvasModelImpl extends MasterImpl implements CanvasModel {
 
     public get groupData(): GroupData {
         return { ...this.data.groupData };
+    }
+
+    public get roiDrawData(): ROIDrawData {
+        return { ...this.data.roiDrawData };
+    }
+
+    public get roiEditData(): ROIEditData {
+        return { ...this.data.roiEditData };
+    }
+
+    public get roiVisualizationData(): ROIVisualizationData {
+        return { ...this.data.roiVisualizationData };
+    }
+
+    public get roiHistory(): ROIHistoryItem[] {
+        return [...this.data.roiHistory];
     }
 
     public get selected(): any {

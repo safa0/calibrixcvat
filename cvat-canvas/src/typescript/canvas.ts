@@ -11,7 +11,7 @@ import {
     CanvasModel, CanvasModelImpl, RectDrawingMethod,
     CuboidDrawingMethod, Configuration, Geometry, Mode,
     HighlightSeverity as _HighlightSeverity, CanvasHint as _CanvasHint,
-    PolyEditData,
+    PolyEditData, ROIDrawData, ROIEditData, ROIVisualizationData,
 } from './canvasModel';
 import { Master } from './master';
 import { CanvasController, CanvasControllerImpl } from './canvasController';
@@ -41,6 +41,13 @@ interface Canvas {
     split(splitData: SplitData): void;
     merge(mergeData: MergeData): void;
     select(objectState: any): void;
+    
+    drawROI(roiDrawData: ROIDrawData): void;
+    editROI(roiEditData: ROIEditData): void;
+    visualizeROI(roiVisualizationData: ROIVisualizationData): void;
+    undoROI(): boolean;
+    redoROI(): boolean;
+    clearROIHistory(): void;
 
     fitCanvas(): void;
     bitmap(enable: boolean): void;
@@ -166,6 +173,30 @@ class CanvasImpl implements Canvas {
 
     public select(objectState: any): void {
         this.model.select(objectState);
+    }
+
+    public drawROI(roiDrawData: ROIDrawData): void {
+        this.model.drawROI(roiDrawData);
+    }
+
+    public editROI(roiEditData: ROIEditData): void {
+        this.model.editROI(roiEditData);
+    }
+
+    public visualizeROI(roiVisualizationData: ROIVisualizationData): void {
+        this.model.visualizeROI(roiVisualizationData);
+    }
+
+    public undoROI(): boolean {
+        return this.model.undoROI();
+    }
+
+    public redoROI(): boolean {
+        return this.model.redoROI();
+    }
+
+    public clearROIHistory(): void {
+        this.model.clearROIHistory();
     }
 
     public mode(): Mode {

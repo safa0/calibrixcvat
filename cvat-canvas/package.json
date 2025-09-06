@@ -5,7 +5,10 @@
   "description": "Part of Computer Vision Annotation Tool which presents its canvas library",
   "main": "src/canvas.ts",
   "scripts": {
-    "build": "tsc && webpack --config ./webpack.config.cjs"
+    "build": "tsc && webpack --config ./webpack.config.cjs",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
   },
   "author": "CVAT.ai",
   "license": "MIT",
@@ -23,5 +26,12 @@
     "svg.js": "2.7.1",
     "svg.resize.js": "1.4.3",
     "svg.select.js": "3.0.1"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.0",
+    "jest": "^29.5.0",
+    "jest-environment-jsdom": "^29.5.0",
+    "ts-jest": "^29.1.0",
+    "identity-obj-proxy": "^3.0.0"
   }
 }

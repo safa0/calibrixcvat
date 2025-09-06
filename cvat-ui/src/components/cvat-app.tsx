@@ -86,6 +86,7 @@ import ConsensusManagementPage from './consensus-management-page/consensus-manag
 import InvitationWatcher from './invitation-watcher/invitation-watcher';
 import SelectOrganizationModal from './select-organization-modal/select-organization-modal';
 import BulkProgress from './bulk-progress';
+import CalibrixDashboard from './calibrix-dashboard/CalibrixDashboard';
 
 interface CVATAppProps {
     loadFormats: () => void;
@@ -538,6 +539,7 @@ class CVATApplication extends React.PureComponent<CVATAppProps & RouteComponentP
                                         <Route exact path='/tasks/:tid/consensus' component={ConsensusManagementPage} />
                                         <Route exact path='/tasks/:id/jobs/create' component={CreateJobPage} />
                                         <Route exact path='/tasks/:id/guide' component={AnnotationGuidePage} />
+                                        <Route exact path='/tasks/:id/calibrix' component={CalibrixDashboard} />
                                         <Route exact path='/tasks/:tid/jobs/:jid' component={AnnotationPageContainer} />
                                         <Route exact path='/tasks/:tid/jobs/:jid/analytics' component={AnalyticsReportPage} />
                                         <Route exact path='/jobs' component={JobsPageComponent} />

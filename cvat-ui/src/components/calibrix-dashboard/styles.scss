@@ -1,0 +1,483 @@
+// Copyright (C) 2025 Calibrix Corporation
+// SPDX-License-Identifier: MIT
+
+@import '../../styles.scss';
+
+.calibrix-dashboard {
+    padding: 20px;
+    min-height: 100vh;
+    background: #fafafa;
+
+    .calibrix-spinner {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 400px;
+    }
+
+    .calibrix-error-alert {
+        margin-bottom: 16px;
+    }
+
+    .calibrix-dashboard-content {
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    .calibrix-left-panel,
+    .calibrix-right-panel {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .calibrix-section {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+        border: 1px solid #e8e8e8;
+
+        .calibrix-section-title {
+            margin: 0 0 16px 0;
+            color: #262626;
+            font-size: 18px;
+            font-weight: 600;
+            border-bottom: 1px solid #f0f0f0;
+            padding-bottom: 8px;
+        }
+    }
+
+    // ROI Creator specific styles
+    .roi-creator {
+        .roi-canvas-container {
+            position: relative;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 16px;
+
+            canvas {
+                display: block;
+                max-width: 100%;
+                height: auto;
+            }
+
+            .roi-overlay {
+                position: absolute;
+                top: 0;
+                left: 0;
+                pointer-events: none;
+                
+                .roi-rectangle {
+                    border: 2px solid #1890ff;
+                    background: rgba(24, 144, 255, 0.1);
+                    position: absolute;
+                    
+                    &.active {
+                        border-color: #52c41a;
+                        background: rgba(82, 196, 26, 0.15);
+                    }
+                    
+                    &.selected {
+                        border-color: #f5222d;
+                        background: rgba(245, 34, 45, 0.15);
+                        box-shadow: 0 0 0 2px rgba(245, 34, 45, 0.2);
+                    }
+                }
+            }
+        }
+
+        .roi-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .roi-list {
+            max-height: 200px;
+            overflow-y: auto;
+            
+            .roi-item {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 8px;
+                border: 1px solid #f0f0f0;
+                border-radius: 4px;
+                margin-bottom: 8px;
+                cursor: pointer;
+                transition: all 0.3s;
+
+                &:hover {
+                    background: #f5f5f5;
+                    border-color: #d9d9d9;
+                }
+
+                &.selected {
+                    background: #e6f7ff;
+                    border-color: #1890ff;
+                }
+
+                .roi-info {
+                    flex: 1;
+                    
+                    .roi-name {
+                        font-weight: 500;
+                        color: #262626;
+                    }
+                    
+                    .roi-coordinates {
+                        font-size: 12px;
+                        color: #8c8c8c;
+                    }
+                }
+
+                .roi-actions {
+                    display: flex;
+                    gap: 4px;
+                }
+            }
+        }
+    }
+
+    // Matching Controls specific styles
+    .matching-controls {
+        .algorithm-params {
+            .ant-form-item {
+                margin-bottom: 12px;
+            }
+        }
+
+        .matching-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid #f0f0f0;
+        }
+
+        .matching-progress {
+            margin-top: 16px;
+            
+            .progress-info {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 8px;
+                
+                .progress-status {
+                    font-weight: 500;
+                    color: #1890ff;
+                }
+                
+                .progress-percentage {
+                    color: #8c8c8c;
+                    font-size: 14px;
+                }
+            }
+        }
+    }
+
+    // Detection Reviewer specific styles
+    .detection-reviewer {
+        .detection-filters {
+            background: #fafafa;
+            padding: 16px;
+            border-radius: 4px;
+            margin-bottom: 16px;
+
+            .filter-row {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 12px;
+                align-items: center;
+            }
+        }
+
+        .detections-list {
+            max-height: 400px;
+            overflow-y: auto;
+            
+            .detection-item {
+                border: 1px solid #e8e8e8;
+                border-radius: 4px;
+                margin-bottom: 8px;
+                transition: all 0.3s;
+
+                &:hover {
+                    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+                }
+
+                &.selected {
+                    border-color: #1890ff;
+                    box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+                }
+
+                &.verified {
+                    border-color: #52c41a;
+                    background: rgba(82, 196, 26, 0.05);
+                }
+
+                &.rejected {
+                    border-color: #ff4d4f;
+                    background: rgba(255, 77, 79, 0.05);
+                }
+
+                .detection-header {
+                    padding: 12px 16px;
+                    border-bottom: 1px solid #f0f0f0;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+
+                    .detection-info {
+                        .detection-label {
+                            font-weight: 500;
+                            color: #262626;
+                        }
+                        
+                        .detection-confidence {
+                            color: #8c8c8c;
+                            font-size: 14px;
+                        }
+                    }
+
+                    .detection-actions {
+                        display: flex;
+                        gap: 4px;
+                    }
+                }
+
+                .detection-body {
+                    padding: 12px 16px;
+
+                    .detection-coordinates {
+                        color: #8c8c8c;
+                        font-size: 14px;
+                        margin-bottom: 8px;
+                    }
+
+                    .detection-notes {
+                        margin-top: 8px;
+                        
+                        .ant-input {
+                            font-size: 14px;
+                        }
+                    }
+                }
+            }
+        }
+
+        .detection-stats {
+            background: #f6ffed;
+            border: 1px solid #b7eb8f;
+            border-radius: 4px;
+            padding: 12px;
+            margin-top: 16px;
+
+            .stats-row {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                
+                &:not(:last-child) {
+                    margin-bottom: 4px;
+                }
+
+                .stat-label {
+                    color: #52c41a;
+                    font-weight: 500;
+                }
+                
+                .stat-value {
+                    color: #262626;
+                }
+            }
+        }
+    }
+
+    // Ground Truth Exporter specific styles
+    .ground-truth-exporter {
+        .export-format {
+            margin-bottom: 16px;
+        }
+
+        .export-options {
+            background: #fafafa;
+            padding: 16px;
+            border-radius: 4px;
+            margin-bottom: 16px;
+
+            .options-title {
+                font-weight: 500;
+                margin-bottom: 12px;
+                color: #262626;
+            }
+
+            .ant-checkbox-wrapper {
+                display: block;
+                margin-bottom: 8px;
+            }
+        }
+
+        .export-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 16px;
+            border-top: 1px solid #f0f0f0;
+
+            .export-info {
+                color: #8c8c8c;
+                font-size: 14px;
+            }
+
+            .export-button {
+                .anticon {
+                    margin-right: 4px;
+                }
+            }
+        }
+
+        .export-progress {
+            margin-top: 16px;
+            
+            .progress-text {
+                text-align: center;
+                color: #1890ff;
+                margin-top: 8px;
+            }
+        }
+    }
+
+    // Responsive design
+    @media (max-width: 768px) {
+        padding: 16px;
+        
+        .calibrix-left-panel,
+        .calibrix-right-panel {
+            gap: 16px;
+        }
+        
+        .calibrix-section {
+            padding: 16px;
+            
+            .calibrix-section-title {
+                font-size: 16px;
+            }
+        }
+        
+        .roi-controls,
+        .matching-actions,
+        .detection-filters .filter-row {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        
+        .export-actions {
+            flex-direction: column;
+            gap: 12px;
+            align-items: stretch;
+        }
+    }
+    
+    @media (max-width: 480px) {
+        padding: 12px;
+        
+        .calibrix-section {
+            padding: 12px;
+            
+            .calibrix-section-title {
+                font-size: 14px;
+            }
+        }
+        
+        .roi-item,
+        .detection-item {
+            .roi-actions,
+            .detection-actions {
+                flex-direction: column;
+                gap: 2px;
+            }
+        }
+    }
+}
+
+// Dark theme support
+[data-theme="dark"] {
+    .calibrix-dashboard {
+        background: #141414;
+        
+        .calibrix-section {
+            background: #1f1f1f;
+            border-color: #303030;
+            
+            .calibrix-section-title {
+                color: #fff;
+                border-bottom-color: #303030;
+            }
+        }
+        
+        .roi-creator {
+            .roi-canvas-container {
+                border-color: #434343;
+            }
+            
+            .roi-list .roi-item {
+                border-color: #303030;
+                
+                &:hover {
+                    background: #262626;
+                    border-color: #434343;
+                }
+                
+                .roi-name {
+                    color: #fff;
+                }
+                
+                .roi-coordinates {
+                    color: #8c8c8c;
+                }
+            }
+        }
+        
+        .detection-reviewer {
+            .detection-filters {
+                background: #262626;
+            }
+            
+            .detections-list .detection-item {
+                border-color: #303030;
+                
+                .detection-header {
+                    border-bottom-color: #303030;
+                    
+                    .detection-label {
+                        color: #fff;
+                    }
+                }
+            }
+            
+            .detection-stats {
+                background: #162312;
+                border-color: #274916;
+            }
+        }
+        
+        .ground-truth-exporter {
+            .export-options {
+                background: #262626;
+                
+                .options-title {
+                    color: #fff;
+                }
+            }
+            
+            .export-actions {
+                border-top-color: #303030;
+            }
+        }
+    }
+}

@@ -17,6 +17,7 @@ import { IntelligentScissors } from 'utils/opencv-wrapper/intelligent-scissors';
 import { KeyMap, KeyMapItem } from 'utils/mousetrap-react';
 import { OpenCVTracker } from 'utils/opencv-wrapper/opencv-interfaces';
 import { ImageFilter } from 'utils/image-processing';
+import { CalibrixState } from '../components/calibrix-dashboard/types';
 
 export interface AuthState {
     initialized: boolean;
@@ -1148,6 +1149,7 @@ export interface CombinedState {
     bulkActions: BulkActionsState;
     serverAPI: ServerAPIState;
     navigation: NavigationState;
+    calibrix: CalibrixState;
 }
 
 export interface Indexable {

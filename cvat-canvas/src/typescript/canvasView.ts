@@ -25,6 +25,7 @@ import { RegionSelector, RegionSelectorImpl } from './regionSelector';
 import { ZoomHandler, ZoomHandlerImpl } from './zoomHandler';
 import { InteractionHandler, InteractionHandlerImpl } from './interactionHandler';
 import { AutoborderHandler, AutoborderHandlerImpl } from './autoborderHandler';
+import { ROIHandler, ROIHandlerImpl } from './roiHandler';
 import consts from './consts';
 import {
     translateToSVG, translateFromSVG, translateToCanvas, translateFromCanvas,
@@ -40,6 +41,7 @@ import {
     DrawData, MergeData, SplitData, Mode, Size, Configuration,
     InteractionResult, InteractionData, ColorBy, HighlightedElements,
     HighlightSeverity, GroupData, JoinData, CanvasHint,
+    ROIDrawData, ROIEditData, ROIVisualizationData, ROITemplate,
 } from './canvasModel';
 
 export interface CanvasView {
@@ -83,6 +85,7 @@ export class CanvasViewImpl implements CanvasView, Listener {
     private zoomHandler: ZoomHandler;
     private autoborderHandler: AutoborderHandler;
     private interactionHandler: InteractionHandler;
+    private roiHandler: ROIHandler;
     private activeElement: ActiveElement;
     private highlightedElements: HighlightedElements;
     private configuration: Configuration;
@@ -649,6 +652,33 @@ export class CanvasViewImpl implements CanvasView, Listener {
         this.moveCanvas();
     };
 
+    private onROICreated = (roi: ROITemplate): void => {
+        const event: CustomEvent = new CustomEvent('canvas.roi.created', {
+            bubbles: false,
+            cancelable: true,
+            detail: { roi },
+        });
+        this.canvas.dispatchEvent(event);
+    };
+
+    private onROIUpdated = (roi: ROITemplate): void => {
+        const event: CustomEvent = new CustomEvent('canvas.roi.updated', {
+            bubbles: false,
+            cancelable: true,
+            detail: { roi },
+        });
+        this.canvas.dispatchEvent(event);
+    };
+
+    private onROIDeleted = (roiId: string): void => {
+        const event: CustomEvent = new CustomEvent('canvas.roi.deleted', {
+            bubbles: false,
+            cancelable: true,
+            detail: { roiId },
+        });
+        this.canvas.dispatchEvent(event);
+    };
+
     private moveCanvas(): void {
         for (const obj of [this.background, this.grid, this.bitmap]) {
             obj.style.top = `${this.geometry.top}px`;
@@ -670,6 +700,7 @@ export class CanvasViewImpl implements CanvasView, Listener {
         this.regionSelector.transform(this.geometry);
         this.objectSelector.transform(this.geometry);
         this.sliceHandler.transform(this.geometry);
+        this.roiHandler.transform(this.geometry);
     }
 
     private transformCanvas(): void {
@@ -759,6 +790,7 @@ export class CanvasViewImpl implements CanvasView, Listener {
         this.autoborderHandler.transform(this.geometry);
         this.interactionHandler.transform(this.geometry);
         this.regionSelector.transform(this.geometry);
+        this.roiHandler.transform(this.geometry);
     }
 
     private resizeCanvas(): void {
@@ -1697,6 +1729,13 @@ export class CanvasViewImpl implements CanvasView, Listener {
             this.geometry,
             this.configuration,
         );
+        this.roiHandler = new ROIHandlerImpl(
+            this.onROICreated,
+            this.onROIUpdated,
+            this.onROIDeleted,
+            this.adoptedContent,
+            this.adoptedText,
+        );
 
         // Setup event handlers
         this.canvas.addEventListener('dblclick', (e: MouseEvent): void => {
@@ -2163,6 +2202,12 @@ export class CanvasViewImpl implements CanvasView, Listener {
             } else if (this.mode === Mode.SPLIT) {
                 this.splitHandler.select(this.controller.selected);
             }
+        } else if (reason === UpdateReasons.ROI_DRAW) {
+            this.roiHandler.drawROI(model.roiDrawData, this.geometry);
+        } else if (reason === UpdateReasons.ROI_EDIT) {
+            this.roiHandler.editROI(model.roiEditData, this.geometry);
+        } else if (reason === UpdateReasons.ROI_VISUALIZE) {
+            this.roiHandler.visualizeROI(model.roiVisualizationData, this.geometry);
         } else if (reason === UpdateReasons.CANCEL) {
             if (this.mode === Mode.DRAW) {
                 if (this.masksHandler.enabled) {
@@ -2203,6 +2248,8 @@ export class CanvasViewImpl implements CanvasView, Listener {
                         cancelable: true,
                     }),
                 );
+            } else if (this.mode === Mode.ROI_DRAW || this.mode === Mode.ROI_EDIT || this.mode === Mode.ROI_VISUALIZE) {
+                this.roiHandler.cancel();
             }
             this.canvas.style.cursor = '';
             this.dispatchCanceledEvent();
